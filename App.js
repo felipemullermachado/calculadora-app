@@ -39,10 +39,7 @@ export default function App() {
   const [listOpen, setListOpen] = useState(false);
   const { getItem, setItem } = useAsyncStorage("@calculafelipe:calculos");
 
-  const handleToggle = () => {
-    setListOpen(!listOpen);
-  };
-
+  //Para atualizar os dados no histórico
   useEffect(() => {
     const handleFetchData = async () => {
       const response = await getItem();
@@ -52,6 +49,13 @@ export default function App() {
     handleFetchData();
   }, [data]);
 
+  //Para realizar a troca de telas
+  const handleToggle = () => {
+    setListOpen(!listOpen);
+  };
+
+  //Método responsável por realizar a persistência de dados
+  //Os dados são armazenados localmente
   const saveData = async (calculo) => {
     const id = uuid.v4();
     const newData = { id, calculo };
@@ -63,6 +67,7 @@ export default function App() {
     await setItem(JSON.stringify(data));
   };
 
+  //Método responsável por realizar as equações
   const calculator = () => {
     const splitNumbers = currentNumber.split(" ");
     const firstNumber = parseFloat(splitNumbers[0]);
@@ -97,6 +102,7 @@ export default function App() {
     setLastNumber(currentNumber);
   };
 
+  //Método responsável por ficar escutando quais são os botões pressionados pelo usuário e apresentá-los na tela
   const handleInput = (button) => {
     if (
       button === "+" ||
@@ -105,7 +111,11 @@ export default function App() {
       button === "÷" ||
       button === "%"
     ) {
-      setCurrentNumber(currentNumber + " " + button + " ");
+      if (currentNumber.lastIndexOf(" ") === currentNumber.length - 1) {
+        setCurrentNumber(currentNumber.substring(0,currentNumber.length - 3) + " " + button + " ")
+      } else {
+        setCurrentNumber(currentNumber + " " + button + " ");
+      }
       return;
     }
     if (button === "(") {
@@ -114,18 +124,45 @@ export default function App() {
     if (button === ")") {
       return;
     }
+
+    if (button === ".") {
+      let arrayVerificador = currentNumber.split(" ")
+      for(let i = 0; i < arrayVerificador.length; i++){
+        if(arrayVerificador[i].split(".").length - 1 < 1){
+          setCurrentNumber(currentNumber + button);
+        } else {
+          setCurrentNumber(currentNumber);
+        }
+      }
+      if (currentNumber.lastIndexOf(".") === currentNumber.length - 1) {
+        setCurrentNumber(currentNumber.substring(0,currentNumber.length - 1) + button)
+      }
+    } else {
+      setCurrentNumber(currentNumber + button);
+    }
+
     switch (button) {
       case "DEL":
-        setCurrentNumber(currentNumber.substring(0, currentNumber.length - 1));
-        setLastNumber(lastNumber.substring(0, lastNumber.length - 1));
+        if (currentNumber.lastIndexOf(" ") === currentNumber.length - 1) {
+          setCurrentNumber(
+            currentNumber.substring(0, currentNumber.length - 3)
+          );
+        } else {
+          setCurrentNumber(
+            currentNumber.substring(0, currentNumber.length - 1)
+          );
+        }
+        if (lastNumber.lastIndexOf(" ") === lastNumber.length - 1) {
+          setLastNumber(lastNumber.substring(0, lastNumber.length - 3));
+        } else {
+          setLastNumber(lastNumber.substring(0, lastNumber.length - 1));
+        }
         return;
       case "=":
         setLastNumber(currentNumber + " = ");
         calculator();
         return;
     }
-
-    setCurrentNumber(currentNumber + button);
   };
 
   const styles = StyleSheet.create({
@@ -240,18 +277,22 @@ export default function App() {
                     },
                   ]}
                 >
-                  <Text style={[
-                    styles.textButton,
-                    {
-                      color:
-                        button === "+" ||
-                        button === "-" ||
-                        button === "x" ||
-                        button === "÷"
-                          ? "white"
-                          : "#4866AA",
-                    },
-                  ]}>{button}</Text>
+                  <Text
+                    style={[
+                      styles.textButton,
+                      {
+                        color:
+                          button === "+" ||
+                          button === "-" ||
+                          button === "x" ||
+                          button === "÷"
+                            ? "white"
+                            : "#4866AA",
+                      },
+                    ]}
+                  >
+                    {button}
+                  </Text>
                 </TouchableOpacity>
               )
             )}
